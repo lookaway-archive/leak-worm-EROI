@@ -1,0 +1,1368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EROI — LOOKAWAY</title>
+
+<!--
+============================================
+SPECIMEN: LEAK-WORM-EROI
+ORGAN: ANATOMICAL STRUCTURE
+RETRIEVAL: February 2026, Tlönian Research Facility
+============================================
+
+STATUS: Operational - v1001
+FUNCTION: Visual thesis transmission — EROI
+DEPENDENCIES: All JavaScript organs in sequence
+
+SURGICAL NOTES:
+Unlike LEAK-WORM-847T, this specimen has no password gate.
+The viewer enters directly into the content — the product
+was always between them and the message.
+
+Vertical scroll reveals:
+- Product (landing)
+- Thesis (the argument)
+- Character (EROI is also a man)
+- Environment (the container)
+- Release (leak the treatment)
+
+The pirate transformation awaits those who spread the signal.
+============================================
+-->
+
+<style>
+:root {
+    --core-r: 122;
+    --core-g: 31;
+    --core-b: 8;
+    --glow-r: 255;
+    --glow-g: 107;
+    --glow-b: 43;
+    --text-r: 255;
+    --text-g: 120;
+    --text-b: 70;
+    --text-opacity: 1.0;
+    
+    --beam-color-r: 229;
+    --beam-color-g: 62;
+    --beam-color-b: 44;
+    --beam-speed: 8s;
+    --beam-start-position: 0%;
+    
+    --particle-base-opacity: 0.06;
+    --particle-decay-multiplier: 1.0;
+    
+    --breathing-speed: 6s;
+    --breathing-opacity-min: 0.7;
+    --breathing-opacity-max: 0.85;
+    
+    --vignette-radius: 85%;
+    --vignette-opacity: 0.02;
+    
+    --scanline-opacity: 0.15;
+    --scanline-speed: 2.5s;
+    
+    --text-glow-spread: 40px;
+    --text-glow-intensity: 0.3;
+    
+    --text-title-blur: 0.3px;
+    --text-body-blur: 0.2px;
+    --text-beam-blur: 0px;
+    
+    --flicker-speed: 0.3s;
+    --flicker-brightness: 1.0;
+    
+    /* Frame glow colors - match leak-worm CRT orange */
+    --frame-glow-r: 229;
+    --frame-glow-g: 62;
+    --frame-glow-b: 44;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: #000;
+    overflow-x: hidden;
+    font-family: 'Courier New', monospace;
+    cursor: crosshair;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+/* CRT GLOW */
+.crt {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+}
+
+.crt::before {
+    content: '';
+    position: absolute;
+    inset: -25%;
+    background: radial-gradient(
+        ellipse at center,
+        rgb(var(--core-r), var(--core-g), var(--core-b)) 0%,
+        rgba(var(--core-r), var(--core-g), var(--core-b), 0.6) 35%,
+        black 75%
+    );
+    opacity: var(--breathing-opacity-min);
+    animation: breathe var(--breathing-speed) ease-in-out infinite;
+    z-index: -1;
+}
+
+@keyframes breathe {
+    50% { 
+        opacity: var(--breathing-opacity-max);
+        filter: brightness(1.2);
+    }
+}
+
+/* SCAN LINES */
+.scanlines {
+    position: fixed;
+    top: -100px;
+    left: 0;
+    width: 100vw;
+    height: calc(100vh + 200px);
+    background: repeating-linear-gradient(
+        to bottom,
+        transparent 0,
+        transparent 2px,
+        black 2px,
+        black 4px
+    );
+    background-size: 100% 4px;
+    opacity: var(--scanline-opacity);
+    animation: scan var(--scanline-speed) linear infinite;
+    pointer-events: none;
+    z-index: 999;
+}
+
+@keyframes scan {
+    to { transform: translateY(4px); }
+}
+
+/* VIGNETTE */
+.vignette {
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(
+        circle at center,
+        transparent var(--vignette-radius),
+        rgba(0, 0, 0, var(--vignette-opacity)) 100%
+    );
+    pointer-events: none;
+    z-index: 4;
+}
+
+/* MAIN CONTAINER */
+.page-container {
+    position: relative;
+    width: 100vw;
+    min-height: 100vh;
+    z-index: 2;
+    padding: 0 0 20vh 0;
+}
+
+/* ==========================================
+   CONTENT SECTIONS
+   ==========================================*/
+
+.content-section {
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 12vh 20px;
+    opacity: 0;
+    animation: section-appear 1s ease forwards;
+}
+
+@keyframes section-appear {
+    to { opacity: 1; }
+}
+
+/* ==========================================
+   HEADER SECTION — Tlönian provenance
+   ==========================================*/
+
+.header-section {
+    width: 100%;
+    max-width: 800px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 20px;
+}
+
+.header-facility {
+    font-size: 10px;
+    color: rgba(var(--text-r), var(--text-g), var(--text-b), 0.5);
+    letter-spacing: 3px;
+    margin-bottom: 8px;
+    filter: blur(var(--text-body-blur)) brightness(var(--flicker-brightness));
+    opacity: var(--text-opacity);
+}
+
+.header-reference {
+    font-size: 10px;
+    color: rgba(var(--text-r), var(--text-g), var(--text-b), 0.4);
+    letter-spacing: 2px;
+    margin-bottom: 60px;
+    filter: blur(var(--text-body-blur)) brightness(var(--flicker-brightness));
+    opacity: var(--text-opacity);
+}
+
+.header-title {
+    font-size: 48px;
+    color: rgb(var(--text-r), var(--text-g), var(--text-b));
+    letter-spacing: 20px;
+    margin-bottom: 20px;
+    text-shadow: 
+        0 0 10px rgba(var(--glow-r), var(--glow-g), var(--glow-b), 1.0),
+        0 0 30px rgba(var(--glow-r), var(--glow-g), var(--glow-b), 0.8),
+        0 0 60px rgba(var(--glow-r), var(--glow-g), var(--glow-b), 0.5);
+    filter: blur(var(--text-title-blur)) brightness(var(--flicker-brightness));
+    animation: title-flicker var(--flicker-speed) infinite;
+    opacity: var(--text-opacity);
+}
+
+.header-format {
+    font-size: 11px;
+    color: rgba(var(--text-r), var(--text-g), var(--text-b), 0.6);
+    font-style: italic;
+    letter-spacing: 1px;
+    margin-bottom: 60px;
+    filter: blur(var(--text-body-blur)) brightness(var(--flicker-brightness));
+    opacity: var(--text-opacity);
+}
+
+.header-meta {
+    font-size: 10px;
+    color: rgba(var(--text-r), var(--text-g), var(--text-b), 0.5);
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+    filter: blur(var(--text-body-blur)) brightness(var(--flicker-brightness));
+    opacity: var(--text-opacity);
+}
+
+.header-pattern {
+    font-size: 14px;
+    color: rgba(var(--text-r), var(--text-g), var(--text-b), 0.6);
+    margin-top: 40px;
+    filter: blur(var(--text-body-blur)) brightness(var(--flicker-brightness));
+    opacity: var(--text-opacity);
+}
+
+/* TEXT SECTIONS */
+.text-section {
+    text-align: center;
+}
+
+.section-title {
+    font-size: 14px;
+    color: rgba(var(--text-r), var(--text-g), var(--text-b), 0.7);
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    margin-bottom: 20px;
+    text-shadow: 
+        0 0 6px rgba(var(--glow-r), var(--glow-g), var(--glow-b), 0.8);
+    filter: blur(var(--text-title-blur)) brightness(var(--flicker-brightness));
+    animation: title-flicker var(--flicker-speed) infinite;
+    opacity: var(--text-opacity);
+}
+
+@keyframes title-flicker {
+    0%, 100% { opacity: 1; }
+    3% { opacity: 0.55; }
+    5% { opacity: 1; }
+    7% { opacity: 0.6; }
+    9% { opacity: 1; }
+    45% { opacity: 1; }
+    46% { opacity: 0.5; }
+    47% { opacity: 1; }
+}
+
+.section-subtitle {
+    font-size: 18px;
+    color: rgb(var(--text-r), var(--text-g), var(--text-b));
+    font-style: italic;
+    margin-bottom: 40px;
+    letter-spacing: 1px;
+    text-shadow: 
+        0 0 8px rgba(var(--glow-r), var(--glow-g), var(--glow-b), 1.0),
+        0 0 16px rgba(var(--glow-r), var(--glow-g), var(--glow-b), 0.6);
+    filter: blur(var(--text-body-blur)) brightness(var(--flicker-brightness));
+    opacity: var(--text-opacity);
+}
+
+.section-content {
+    font-size: 16px;
+    line-height: 1.9;
+    color: rgba(var(--text-r), var(--text-g), var(--text-b), 0.85);
+    text-shadow: 
+        0 0 2px rgba(var(--text-r), var(--text-g), var(--text-b), 0.5),
+        0 0 6px rgba(var(--text-r), var(--text-g), var(--text-b), 0.2);
+    opacity: var(--text-opacity);
+}
+
+.section-content p {
+    margin: 20px 0;
+    filter: blur(var(--text-body-blur)) brightness(var(--flicker-brightness));
+}
+
+.sub-subtitle {
+    font-size: 12px;
+    color: rgba(var(--text-r), var(--text-g), var(--text-b), 0.7);
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    margin: 35px 0 15px 0;
+    text-shadow: 
+        0 0 4px rgba(var(--glow-r), var(--glow-g), var(--glow-b), 0.5);
+    filter: blur(var(--text-body-blur)) brightness(var(--flicker-brightness));
+}
+
+.emphasis {
+    color: rgb(var(--text-r), var(--text-g), var(--text-b));
+    font-weight: 600;
+    text-shadow: 0 0 8px rgba(var(--glow-r), var(--glow-g), var(--glow-b), 0.6);
+}
+
+.emphasis-block {
+    display: block;
+    margin: 25px 0;
+    font-size: 18px;
+    color: rgb(var(--text-r), var(--text-g), var(--text-b));
+    font-weight: 600;
+    text-shadow: 
+        0 0 10px rgba(var(--glow-r), var(--glow-g), var(--glow-b), 1.0),
+        0 0 20px rgba(var(--glow-r), var(--glow-g), var(--glow-b), 0.6);
+}
+
+.pattern-list {
+    margin: 25px 0;
+    text-align: left;
+    display: inline-block;
+}
+
+.pattern-list p {
+    margin: 12px 0;
+}
+
+.pattern-term {
+    color: rgb(var(--text-r), var(--text-g), var(--text-b));
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-shadow: 0 0 6px rgba(var(--glow-r), var(--glow-g), var(--glow-b), 0.5);
+}
+
+/* ==========================================
+   FRAMED IMAGES — Triptych style
+   ==========================================*/
+
+.image-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8vh 20px;
+}
+
+.image-frame {
+    position: relative;
+    max-width: 700px;
+    width: 100%;
+    border: 7px solid rgba(var(--frame-glow-r), var(--frame-glow-g), var(--frame-glow-b), 0.6);
+    border-radius: 3px;
+    box-shadow: 
+        0 0 20px rgba(var(--frame-glow-r), var(--frame-glow-g), var(--frame-glow-b), 0.4),
+        0 0 40px rgba(var(--frame-glow-r), var(--frame-glow-g), var(--frame-glow-b), 0.25),
+        0 0 80px rgba(var(--frame-glow-r), var(--frame-glow-g), var(--frame-glow-b), 0.15),
+        inset 0 0 30px rgba(0, 0, 0, 0.3);
+    background: rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+    transition: border-color 0.5s ease, box-shadow 0.5s ease, opacity 0.5s ease;
+}
+
+.image-frame img {
+    width: 100%;
+    height: auto;
+    display: block;
+    filter: brightness(0.95) contrast(1.05);
+    transition: filter 0.5s ease, opacity 0.5s ease;
+}
+
+.image-frame::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border: 1px solid rgba(var(--frame-glow-r), var(--frame-glow-g), var(--frame-glow-b), 0.15);
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Image section dot - above the frame */
+.image-section .section-dot {
+    margin-bottom: 30px;
+}
+
+/* ==========================================
+   LEAK BUTTON
+   ==========================================*/
+
+.button-section {
+    display: flex;
+    justify-content: center;
+    padding: 10vh 20px;
+}
+
+.membrane-button {
+    padding: 12px 24px;
+    background: rgba(229, 62, 44, 0.05);
+    border: 1px solid rgba(229, 62, 44, 0.45);
+    border-radius: 3px;
+    color: rgba(229, 62, 44, 0.7);
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    letter-spacing: 3px;
+    cursor: crosshair;
+    transition: all 0.3s;
+    text-transform: uppercase;
+    outline: none;
+    filter: blur(var(--text-body-blur)) brightness(var(--flicker-brightness));
+    opacity: var(--text-opacity);
+}
+
+.membrane-button:hover {
+    background: rgba(229, 62, 44, 0.1);
+    color: rgba(229, 62, 44, 0.85);
+    border-color: rgba(229, 62, 44, 0.6);
+    transform: translateY(-2px);
+    box-shadow: 0 0 20px rgba(229, 62, 44, 0.2);
+}
+
+.membrane-button.leaked {
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* ==========================================
+   DEATH SCREEN
+   ==========================================*/
+
+.death-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    cursor: crosshair;
+}
+
+.death-screen.active {
+    display: flex;
+    animation: fade-in 2s ease forwards;
+}
+
+@keyframes fade-in {
+    to { opacity: 1; }
+}
+
+.death-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 30px;
+}
+
+.death-dot {
+    width: 12px;
+    height: 12px;
+    background: rgba(var(--glow-r), var(--glow-g), var(--glow-b), 1.0);
+    border-radius: 50%;
+    box-shadow: 0 0 20px rgba(var(--glow-r), var(--glow-g), var(--glow-b), 1.0);
+    opacity: 0;
+}
+
+.death-message {
+    font-size: 20px;
+    color: rgb(var(--text-r), var(--text-g), var(--text-b));
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    text-align: center;
+    padding: 40px;
+    text-shadow: 
+        0 0 4px rgba(var(--text-r), var(--text-g), var(--text-b), 0.7),
+        0 0 10px rgba(var(--text-r), var(--text-g), var(--text-b), 0.4);
+    filter: blur(1.5px);
+    animation: title-flicker 0.3s infinite;
+    opacity: 0;
+}
+
+.death-subtitle {
+    display: block;
+    font-size: 14px;
+    color: rgba(var(--text-r), var(--text-g), var(--text-b), 0.6);
+    letter-spacing: 2px;
+    margin-top: 20px;
+}
+
+/* ==========================================
+   REWARD SCREEN — Pirate transformation
+   ==========================================*/
+
+.reward-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    cursor: crosshair;
+}
+
+.reward-screen.active {
+    display: flex;
+    animation: fade-in 2s ease forwards;
+}
+
+.reward-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 30px;
+}
+
+.reward-dot {
+    width: 12px;
+    height: 12px;
+    background: rgba(var(--glow-r), var(--glow-g), var(--glow-b), 1.0);
+    border-radius: 50%;
+    box-shadow: 0 0 20px rgba(var(--glow-r), var(--glow-g), var(--glow-b), 1.0);
+    opacity: 0;
+}
+
+.reward-header {
+    font-size: 12px;
+    color: rgba(var(--text-r), var(--text-g), var(--text-b), 0.7);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    opacity: 0;
+}
+
+.reward-title {
+    font-size: 24px;
+    color: rgb(var(--text-r), var(--text-g), var(--text-b));
+    text-transform: uppercase;
+    letter-spacing: 5px;
+    text-shadow: 
+        0 0 8px rgba(var(--glow-r), var(--glow-g), var(--glow-b), 1.0),
+        0 0 16px rgba(var(--glow-r), var(--glow-g), var(--glow-b), 0.8),
+        0 0 32px rgba(var(--glow-r), var(--glow-g), var(--glow-b), 0.6);
+    animation: title-flicker 0.3s infinite;
+    opacity: 0;
+    filter: blur(0px);
+}
+
+.reward-subtitle {
+    font-size: 13px;
+    color: rgba(var(--text-r), var(--text-g), var(--text-b), 0.8);
+    font-style: italic;
+    letter-spacing: 1px;
+    max-width: 500px;
+    text-align: center;
+    opacity: 0;
+}
+
+.reward-footer {
+    position: absolute;
+    bottom: 60px;
+    width: 100%;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.footer-tag {
+    font-size: 9px;
+    color: rgba(var(--text-r), var(--text-g), var(--text-b), 0.5);
+    letter-spacing: 1px;
+    opacity: 0;
+}
+
+.footer-credit {
+    font-size: 11px;
+    color: rgba(var(--text-r), var(--text-g), var(--text-b), 0.6);
+    letter-spacing: 2px;
+    opacity: 0;
+}
+
+/* ==========================================
+   ELECTRON BEAM
+   ==========================================*/
+
+.beam-system {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    z-index: 50;
+    pointer-events: none;
+}
+
+.beam-body {
+    position: absolute;
+    width: 100%;
+    height: 2px;
+    left: 0;
+    background: linear-gradient(to right,
+        transparent 0%,
+        rgba(var(--beam-color-r), var(--beam-color-g), var(--beam-color-b), 0.03) 10%,
+        rgba(var(--beam-color-r), var(--beam-color-g), var(--beam-color-b), 0.06) 50%,
+        rgba(var(--beam-color-r), var(--beam-color-g), var(--beam-color-b), 0.03) 90%,
+        transparent 100%
+    );
+    animation: beam-scan var(--beam-speed) linear infinite;
+}
+
+.beam-glow {
+    position: absolute;
+    width: 100%;
+    height: 12px;
+    left: 0;
+    transform: translateY(-5px);
+    background: linear-gradient(to right,
+        transparent 20%,
+        rgba(var(--beam-color-r), var(--beam-color-g), var(--beam-color-b), 0.04) 50%,
+        transparent 80%
+    );
+    filter: blur(4px);
+    animation: beam-scan var(--beam-speed) linear infinite;
+    opacity: 0.15;
+    transition: opacity 0.1s, filter 0.1s;
+}
+
+.beam-glow.approaching {
+    opacity: 0.25;
+    filter: blur(6px) brightness(1.2);
+}
+
+.beam-hotspot {
+    position: absolute;
+    width: 100%;
+    height: 1px;
+    left: 0;
+    background: linear-gradient(to right,
+        transparent 45%,
+        rgba(var(--beam-color-r), calc(var(--beam-color-g) * 1.5), var(--beam-color-b), 0.025) 48%,
+        rgba(var(--beam-color-r), calc(var(--beam-color-g) * 1.8), calc(var(--beam-color-b) * 0.5), 0.05) 50%,
+        rgba(var(--beam-color-r), calc(var(--beam-color-g) * 1.5), var(--beam-color-b), 0.025) 52%,
+        transparent 55%
+    );
+    animation: beam-scan var(--beam-speed) linear infinite;
+    opacity: 0.1;
+    transition: opacity 0.05s;
+}
+
+.beam-hotspot.active {
+    opacity: 0.3;
+    filter: blur(0.3px);
+}
+
+@keyframes beam-scan {
+    from { 
+        top: var(--beam-start-position);
+        opacity: 0;
+    }
+    2% { opacity: 1; }
+    98% { opacity: 1; }
+    to { 
+        top: 100%;
+        opacity: 0;
+    }
+}
+
+/* BEAM CONTACT EFFECTS */
+.beam-contact {
+    filter: blur(var(--text-beam-blur)) brightness(1.2) !important;
+    text-shadow: 
+        0 0 8px rgba(var(--glow-r), var(--glow-g), var(--glow-b), 1.0),
+        0 0 16px rgba(var(--glow-r), var(--glow-g), var(--glow-b), 0.8),
+        0 0 32px rgba(var(--glow-r), var(--glow-g), var(--glow-b), 0.5) !important;
+    transition: all 0.08s ease-out;
+}
+
+.beam-approaching {
+    opacity: 0.96;
+    filter: brightness(1.05);
+    transition: all 0.15s ease-out;
+}
+
+/* PIRATE TRANSITION — smooth fade for content */
+.pirate-fading .image-frame {
+    opacity: 0 !important;
+    transition: opacity 3s ease-out !important;
+}
+
+.pirate-fading .image-frame img {
+    opacity: 0 !important;
+    transition: opacity 3s ease-out !important;
+}
+
+.pirate-fading .blink-dot {
+    opacity: 0 !important;
+    transition: opacity 2s ease-out !important;
+}
+
+.pirate-fading .section-dot {
+    opacity: 0 !important;
+    transition: opacity 2s ease-out !important;
+}
+
+/* ==========================================
+   PARTICLES
+   ==========================================*/
+
+.particle-container {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.particle-field {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+}
+
+.particle {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(var(--glow-r), var(--glow-g), var(--glow-b), 1.0);
+    opacity: calc(var(--particle-base-opacity) * var(--particle-decay-multiplier));
+    will-change: transform, opacity;
+    transform: translateZ(0);
+    transition: opacity 0.3s ease-out;
+    box-shadow: 0 0 2px rgba(var(--glow-r), var(--glow-g), var(--glow-b), 0.3);
+    min-width: 1.5px;
+    min-height: 1.5px;
+    animation: drift-up linear infinite;
+}
+
+@keyframes drift-up {
+    from { transform: translateY(110vh); }
+    to { transform: translateY(-10vh); }
+}
+
+.particle.beam-revealed {
+    opacity: calc(var(--particle-base-opacity) * 3.5 * var(--particle-decay-multiplier)) !important;
+    transition: opacity 0.1s ease-out;
+}
+
+/* ==========================================
+   BLINK DOT
+   ==========================================*/
+
+.blink-dot {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    background: rgba(var(--glow-r), var(--glow-g), var(--glow-b), 1.0);
+    border-radius: 50%;
+    box-shadow: 0 0 12px rgba(var(--glow-r), var(--glow-g), var(--glow-b), 0.9);
+    filter: blur(var(--text-body-blur)) brightness(var(--flicker-brightness));
+    animation: dot-pulse 2s ease-in-out infinite;
+    opacity: var(--text-opacity);
+}
+
+@keyframes dot-pulse {
+    0%, 100% { filter: opacity(0.3); transform: scale(0.8); }
+    50% { filter: opacity(1); transform: scale(1.2); }
+}
+
+.section-dot {
+    text-align: center;
+    margin: 40px 0;
+}
+
+/* ==========================================
+   MOBILE
+   ==========================================*/
+
+@media (max-width: 768px) {
+    .section-title { font-size: 12px; }
+    .section-subtitle { font-size: 16px; }
+    .section-content { font-size: 14px; }
+    .thesis-lead { font-size: 16px; }
+    .image-frame { max-width: 95vw; }
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* ==========================================
+   CLIPBOARD NOTIFICATION — Blue popup
+   ==========================================*/
+
+#clipboardNotification {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 40, 80, 0.95);
+    border: 2px solid rgba(0, 150, 255, 0.6);
+    border-radius: 4px;
+    padding: 20px 40px;
+    color: rgba(150, 220, 255, 0.95);
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    letter-spacing: 2px;
+    text-align: center;
+    z-index: 1000;
+    display: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    box-shadow: 
+        0 0 30px rgba(0, 150, 255, 0.4),
+        0 0 60px rgba(0, 100, 200, 0.2),
+        inset 0 0 20px rgba(0, 50, 100, 0.3);
+    text-shadow: 0 0 10px rgba(0, 200, 255, 0.5);
+}
+</style>
+</head>
+<body>
+
+<div class="crt"></div>
+
+<div class="page-container" id="pageContainer">
+    <!-- Content will be injected here -->
+</div>
+
+<div class="death-screen" id="deathScreen">
+    <div class="death-content">
+        <div class="death-dot" id="deathDot"></div>
+        <div class="death-message" id="deathTitle"></div>
+    </div>
+</div>
+
+<div class="reward-screen" id="rewardScreen">
+    <div class="reward-content">
+        <div class="reward-dot" id="rewardDot"></div>
+        <div class="reward-header" id="rewardHeader"></div>
+        <div class="reward-title" id="rewardTitle"></div>
+        <div class="reward-subtitle" id="rewardSubtitle"></div>
+    </div>
+    <div class="reward-footer">
+        <div class="footer-tag" id="footerTag"></div>
+        <div class="footer-credit" id="footerCredit"></div>
+    </div>
+</div>
+
+<div class="vignette"></div>
+<div class="scanlines"></div>
+
+<div id="clipboardNotification">SPECIMEN LINK COPIED TO CLIPBOARD</div>
+
+<script src="eroi-content.js"></script>
+<script src="config.js"></script>
+<script src="decay-core.js"></script>
+<script src="beam.js"></script>
+<script src="particles.js"></script>
+<script src="leak-worm-audio.js"></script>
+
+<script>
+// ==========================================
+// EROI SPECIMEN — Main Controller
+// ==========================================
+
+const eroi = {
+    loadedSections: new Set()
+};
+
+// COLOR INTERPOLATION
+function interpolateColor(start, end, progress) {
+    return {
+        r: Math.round(start.r + (end.r - start.r) * progress),
+        g: Math.round(start.g + (end.g - start.g) * progress),
+        b: Math.round(start.b + (end.b - start.b) * progress)
+    };
+}
+
+function interpolateValue(start, end, progress) {
+    return start + (end - start) * progress;
+}
+
+// VISUAL DECAY
+function applyDecayVisuals(stage, progress) {
+    const root = document.documentElement;
+    
+    let startColors, endColors;
+    let startBreathing, endBreathing;
+    let startVignette, endVignette;
+    let startScanlines, endScanlines;
+    let startTextGlow, endTextGlow;
+    let startBlur, endBlur;
+    let startFlicker, endFlicker;
+    
+    if (stage === 'healthy') {
+        startColors = CONFIG.colors.healthy;
+        endColors = CONFIG.colors.healthy;
+        startBreathing = CONFIG.breathing.healthy;
+        endBreathing = CONFIG.breathing.healthy;
+        startVignette = CONFIG.vignette.healthy;
+        endVignette = CONFIG.vignette.healthy;
+        startScanlines = CONFIG.scanlines.healthy;
+        endScanlines = CONFIG.scanlines.healthy;
+        startTextGlow = CONFIG.textShadow.healthy;
+        endTextGlow = CONFIG.textShadow.healthy;
+        startBlur = CONFIG.blur.healthy;
+        endBlur = CONFIG.blur.healthy;
+        startFlicker = CONFIG.flicker.healthy;
+        endFlicker = CONFIG.flicker.healthy;
+    } else if (stage === 'panic') {
+        startColors = CONFIG.colors.healthy;
+        endColors = CONFIG.colors.panic;
+        startBreathing = CONFIG.breathing.healthy;
+        endBreathing = CONFIG.breathing.panic;
+        startVignette = CONFIG.vignette.healthy;
+        endVignette = CONFIG.vignette.panic;
+        startScanlines = CONFIG.scanlines.healthy;
+        endScanlines = CONFIG.scanlines.panic;
+        startTextGlow = CONFIG.textShadow.healthy;
+        endTextGlow = CONFIG.textShadow.panic;
+        startBlur = CONFIG.blur.healthy;
+        endBlur = CONFIG.blur.panic;
+        startFlicker = CONFIG.flicker.healthy;
+        endFlicker = CONFIG.flicker.panic;
+    } else if (stage === 'decay') {
+        startColors = CONFIG.colors.panic;
+        endColors = CONFIG.colors.decay;
+        startBreathing = CONFIG.breathing.panic;
+        endBreathing = CONFIG.breathing.decay;
+        startVignette = CONFIG.vignette.panic;
+        endVignette = CONFIG.vignette.decay;
+        startScanlines = CONFIG.scanlines.panic;
+        endScanlines = CONFIG.scanlines.decay;
+        startTextGlow = CONFIG.textShadow.panic;
+        endTextGlow = CONFIG.textShadow.decay;
+        startBlur = CONFIG.blur.panic;
+        endBlur = CONFIG.blur.decay;
+        startFlicker = CONFIG.flicker.panic;
+        endFlicker = CONFIG.flicker.decay;
+    } else if (stage === 'death') {
+        startColors = CONFIG.colors.decay;
+        endColors = CONFIG.colors.death;
+        startBreathing = CONFIG.breathing.decay;
+        endBreathing = CONFIG.breathing.death;
+        startVignette = CONFIG.vignette.decay;
+        endVignette = CONFIG.vignette.death;
+        startScanlines = CONFIG.scanlines.decay;
+        endScanlines = CONFIG.scanlines.death;
+        startTextGlow = CONFIG.textShadow.decay;
+        endTextGlow = CONFIG.textShadow.death;
+        startBlur = CONFIG.blur.decay;
+        endBlur = CONFIG.blur.death;
+        startFlicker = CONFIG.flicker.decay;
+        endFlicker = CONFIG.flicker.death;
+    } else if (stage === 'pirate') {
+        const previousStage = decay.previousStage || 'healthy';
+        startColors = CONFIG.colors[previousStage];
+        endColors = CONFIG.colors.pirate;
+        startBreathing = CONFIG.breathing[previousStage];
+        endBreathing = CONFIG.breathing.pirate;
+        startVignette = CONFIG.vignette[previousStage];
+        endVignette = CONFIG.vignette.pirate;
+        startScanlines = CONFIG.scanlines[previousStage];
+        endScanlines = CONFIG.scanlines.pirate;
+        startTextGlow = CONFIG.textShadow[previousStage];
+        endTextGlow = CONFIG.textShadow.pirate;
+        startBlur = CONFIG.blur[previousStage];
+        endBlur = CONFIG.blur.pirate;
+        startFlicker = CONFIG.flicker[previousStage];
+        endFlicker = CONFIG.flicker.pirate;
+    }
+    
+    const coreColor = interpolateColor(startColors.core, endColors.core, progress);
+    const glowColor = interpolateColor(startColors.glow, endColors.glow, progress);
+    const textColor = interpolateColor(startColors.text, endColors.text, progress);
+    
+    root.style.setProperty('--core-r', coreColor.r);
+    root.style.setProperty('--core-g', coreColor.g);
+    root.style.setProperty('--core-b', coreColor.b);
+    root.style.setProperty('--glow-r', glowColor.r);
+    root.style.setProperty('--glow-g', glowColor.g);
+    root.style.setProperty('--glow-b', glowColor.b);
+    root.style.setProperty('--text-r', textColor.r);
+    root.style.setProperty('--text-g', textColor.g);
+    root.style.setProperty('--text-b', textColor.b);
+    
+    let opacityProgress = progress;
+    if (stage === 'pirate') {
+        const multiplier = CONFIG.timings.pirate?.opacityMultiplier ?? 1.0;
+        opacityProgress = Math.min(progress * multiplier, 1.0);
+    } else if (stage === 'death') {
+        const multiplier = CONFIG.timings.standard?.opacityMultiplier ?? 1.0;
+        opacityProgress = Math.min(progress * multiplier, 1.0);
+    }
+    
+    const textOpacity = interpolateValue(startColors.textOpacity ?? 1.0, endColors.textOpacity ?? 1.0, opacityProgress);
+    root.style.setProperty('--text-opacity', textOpacity);
+    
+    root.style.setProperty('--beam-color-r', glowColor.r);
+    root.style.setProperty('--beam-color-g', glowColor.g);
+    root.style.setProperty('--beam-color-b', glowColor.b);
+    
+    const breathSpeed = interpolateValue(startBreathing.speed, endBreathing.speed, progress);
+    const breathMin = interpolateValue(startBreathing.opacityMin, endBreathing.opacityMin, progress);
+    const breathMax = interpolateValue(startBreathing.opacityMax, endBreathing.opacityMax, progress);
+    root.style.setProperty('--breathing-speed', breathSpeed + 's');
+    root.style.setProperty('--breathing-opacity-min', breathMin);
+    root.style.setProperty('--breathing-opacity-max', breathMax);
+    
+    const vignetteRadius = interpolateValue(startVignette.radius, endVignette.radius, progress);
+    const vignetteOpacity = interpolateValue(startVignette.opacity, endVignette.opacity, progress);
+    root.style.setProperty('--vignette-radius', vignetteRadius + '%');
+    root.style.setProperty('--vignette-opacity', vignetteOpacity);
+    
+    const scanOpacity = interpolateValue(startScanlines.opacity, endScanlines.opacity, progress);
+    const scanSpeed = interpolateValue(startScanlines.speed, endScanlines.speed, progress);
+    root.style.setProperty('--scanline-opacity', scanOpacity);
+    root.style.setProperty('--scanline-speed', scanSpeed + 's');
+    
+    const textGlowSpread = interpolateValue(startTextGlow.spread, endTextGlow.spread, progress);
+    const textGlowIntensity = interpolateValue(startTextGlow.intensity, endTextGlow.intensity, progress);
+    root.style.setProperty('--text-glow-spread', textGlowSpread + 'px');
+    root.style.setProperty('--text-glow-intensity', textGlowIntensity);
+    
+    const titleBlur = interpolateValue(startBlur.title, endBlur.title, progress);
+    const textBlur = interpolateValue(startBlur.text, endBlur.text, progress);
+    root.style.setProperty('--text-title-blur', titleBlur + 'px');
+    root.style.setProperty('--text-body-blur', textBlur + 'px');
+    
+    const flickerSpeed = interpolateValue(startFlicker.speed, endFlicker.speed, progress);
+    const flickerBrightness = interpolateValue(startFlicker.brightness, endFlicker.brightness, progress);
+    root.style.setProperty('--flicker-speed', flickerSpeed + 's');
+    root.style.setProperty('--flicker-brightness', flickerBrightness);
+}
+
+// DEATH SCREEN
+window.prepareDeathScreen = function() {
+    const root = document.documentElement;
+    const deathScreen = document.getElementById('deathScreen');
+    const deathDot = document.getElementById('deathDot');
+    const deathTitle = document.getElementById('deathTitle');
+    
+    root.style.setProperty('--breathing-opacity-min', '0.03');
+    root.style.setProperty('--breathing-opacity-max', '0.05');
+    root.style.setProperty('--breathing-speed', '8s');
+    
+    deathScreen.classList.add('active');
+    
+    let blinkCount = 0;
+    const blinkInterval = setInterval(() => {
+        deathDot.style.opacity = deathDot.style.opacity === '1' ? '0' : '1';
+        blinkCount++;
+        
+        if (blinkCount >= 6) {
+            clearInterval(blinkInterval);
+            deathDot.style.opacity = '0';
+            
+            setTimeout(() => {
+                deathTitle.innerHTML = 'TRANSMISSION INTERRUPTED<span class="death-subtitle">SIGNAL LOST</span>';
+                deathTitle.style.opacity = '0';
+                
+                setTimeout(() => {
+                    deathTitle.style.transition = 'opacity 1.5s ease';
+                    deathTitle.style.opacity = '1';
+                }, 100);
+            }, 500);
+        }
+    }, 300);
+    
+    deathScreen.addEventListener('click', () => {
+        location.reload();
+    });
+};
+
+// REWARD SCREEN
+function showRewardScreen() {
+    const rewardScreen = document.getElementById('rewardScreen');
+    const dot = document.getElementById('rewardDot');
+    const header = document.getElementById('rewardHeader');
+    const title = document.getElementById('rewardTitle');
+    const subtitle = document.getElementById('rewardSubtitle');
+    const footerTag = document.getElementById('footerTag');
+    const footerCredit = document.getElementById('footerCredit');
+    
+    rewardScreen.classList.add('active');
+    
+    const colorShiftDuration = CONFIG.timings.pirate?.colorShiftDuration || 7000;
+    const fadeOutDuration = CONFIG.timings.pirate?.fadeOutDuration || 3000;
+    const opacityMultiplier = CONFIG.timings.pirate?.opacityMultiplier || 1.2;
+    const opacityFadeComplete = (colorShiftDuration / opacityMultiplier);
+    const delayUntilVisible = Math.max(0, opacityFadeComplete - fadeOutDuration);
+    
+    setTimeout(() => {
+        let blinkCount = 0;
+        const blinkInterval = setInterval(() => {
+            dot.style.opacity = dot.style.opacity === '1' ? '0' : '1';
+            blinkCount++;
+            if (blinkCount >= 6) {
+                clearInterval(blinkInterval);
+                dot.style.opacity = '0';
+                
+                const reward = eroiContent.reward;
+                
+                setTimeout(() => {
+                    typewriterEffect(header, reward.header, 50, () => {
+                        setTimeout(() => {
+                            typewriterEffect(title, reward.title, 50, () => {
+                                setTimeout(() => {
+                                    typewriterEffect(subtitle, reward.subtitle, 50, () => {
+                                        setTimeout(() => {
+                                            typewriterEffect(footerTag, reward.footerTag, 50, () => {
+                                                setTimeout(() => {
+                                                    const creditText = `${reward.footerCredit}<br>${reward.footerSymbol}`;
+                                                    typewriterEffect(footerCredit, creditText, 50);
+                                                }, 300);
+                                            });
+                                        }, 500);
+                                    });
+                                }, 300);
+                            });
+                        }, 300);
+                    });
+                }, 500);
+            }
+        }, 300);
+    }, delayUntilVisible);
+    
+    // Click to redirect to lookaway archive
+    rewardScreen.addEventListener('click', () => {
+        if (window.leakAudio && window.leakAudio.ready) {
+            window.leakAudio.triggerLeakSound();
+        }
+        
+        const fadeOverlay = document.createElement('div');
+        fadeOverlay.style.cssText = `
+            position: fixed;
+            inset: 0;
+            background: black;
+            opacity: 0;
+            z-index: 9999;
+            pointer-events: none;
+            transition: opacity 2s ease-out;
+        `;
+        document.body.appendChild(fadeOverlay);
+        
+        setTimeout(() => {
+            fadeOverlay.style.opacity = '1';
+        }, 50);
+        
+        setTimeout(() => {
+            window.location.href = eroiContent.reward.redirectUrl;
+        }, 2500);
+    });
+}
+
+// TYPEWRITER
+function typewriterEffect(element, text, speed, callback) {
+    element.style.opacity = '1';
+    let i = 0;
+    const interval = setInterval(() => {
+        if (i < text.length) {
+            if (text.substr(i, 4) === '<br>') {
+                element.innerHTML += '<br>';
+                i += 4;
+            } else {
+                element.innerHTML += text.charAt(i);
+                i++;
+            }
+        } else {
+            clearInterval(interval);
+            if (callback) callback();
+        }
+    }, speed);
+}
+
+// CLIPBOARD NOTIFICATION
+function showClipboardNotification() {
+    const notification = document.getElementById('clipboardNotification');
+    notification.style.display = 'block';
+    setTimeout(() => notification.style.opacity = '1', 10);
+    setTimeout(() => {
+        notification.style.opacity = '0';
+        setTimeout(() => notification.style.display = 'none', 300);
+    }, 2000);
+}
+
+// PIRATE MODE
+function startPirateMode() {
+    // Add pirate-fading class to trigger smooth fade of images and dots
+    document.getElementById('pageContainer').classList.add('pirate-fading');
+    
+    decay.enterPirateMode(() => {
+        showRewardScreen();
+    });
+}
+
+// LEAK FUNCTION
+function leakTreatment(event) {
+    const btn = event.target;
+    
+    if (btn.classList.contains('leaked')) return;
+    btn.classList.add('leaked');
+    btn.textContent = 'LEAKING...';
+    
+    // Play sound
+    if (window.leakAudio && window.leakAudio.ready) {
+        window.leakAudio.triggerLeakSound();
+    }
+    
+    // Copy specimen link to clipboard
+    const clipboardText = `LOOKAWAY: ${eroiContent.reward.specimenUrl}`;
+    navigator.clipboard.writeText(clipboardText).then(() => {
+        console.log('Copied to clipboard:', clipboardText);
+        
+        // Show notification
+        showClipboardNotification();
+        
+        // Wait for notification, then start pirate transition
+        setTimeout(() => {
+            startPirateMode();
+        }, 2000);
+    }).catch(err => {
+        console.log('Clipboard copy failed:', err);
+        // Start pirate mode anyway
+        setTimeout(() => {
+            startPirateMode();
+        }, 1500);
+    });
+}
+
+// BUILD CONTENT
+function buildContent() {
+    const container = document.getElementById('pageContainer');
+    container.innerHTML = '';
+    
+    eroiContent.sections.forEach(section => {
+        const sectionEl = document.createElement('div');
+        sectionEl.className = 'content-section';
+        sectionEl.dataset.sectionId = section.id;
+        
+        if (section.type === 'header') {
+            sectionEl.classList.add('header-section');
+            const c = section.content;
+            sectionEl.innerHTML = `
+                <div class="header-facility">${c.facility}</div>
+                <div class="header-reference">${c.reference}</div>
+                <div class="header-title">${c.title}</div>
+                <div class="header-format">${c.format}</div>
+                <div class="header-meta">Department: ${c.department}</div>
+                <div class="header-meta">Status: ${c.status}</div>
+                <div class="header-pattern">${c.pattern}</div>
+            `;
+        } else if (section.type === 'text') {
+            sectionEl.classList.add('text-section');
+            sectionEl.innerHTML = `
+                <div class="section-dot"><span class="blink-dot"></span></div>
+                <div class="section-title">${section.title}</div>
+                <div class="section-subtitle">${section.subtitle}</div>
+                <div class="section-content">${section.content}</div>
+            `;
+        } else if (section.type === 'image-framed') {
+            sectionEl.classList.add('image-section');
+            sectionEl.innerHTML = `
+                <div class="section-dot"><span class="blink-dot"></span></div>
+                <div class="image-frame">
+                    <img src="${eroiContent.getImage(section.image)}" alt="${section.alt}">
+                </div>
+            `;
+        }
+        
+        container.appendChild(sectionEl);
+    });
+    
+    // Add leak button
+    const buttonSection = document.createElement('div');
+    buttonSection.className = 'content-section button-section';
+    buttonSection.innerHTML = `
+        <button class="membrane-button" onclick="leakTreatment(event)">LEAK TREATMENT</button>
+    `;
+    container.appendChild(buttonSection);
+    
+    // End spacer
+    const spacer = document.createElement('div');
+    spacer.style.height = '20vh';
+    container.appendChild(spacer);
+}
+
+// INITIALIZATION
+document.addEventListener('DOMContentLoaded', () => {
+    if (typeof eroiContent === 'undefined') {
+        console.error('eroi-content.js not loaded!');
+        return;
+    }
+    if (typeof CONFIG === 'undefined') {
+        console.error('config.js not loaded!');
+        return;
+    }
+    if (typeof decay === 'undefined') {
+        console.error('decay-core.js not loaded!');
+        return;
+    }
+    
+    // Build content
+    buildContent();
+    
+    // Initialize beam
+    if (typeof BeamModule !== 'undefined') {
+        window.beam = new BeamModule();
+        window.beam.init();
+    }
+    
+    // Initialize particles
+    if (typeof ParticleDrift !== 'undefined') {
+        window.particles = new ParticleDrift();
+        window.particles.init();
+    }
+    
+    // Subscribe to decay
+    decay.subscribe((stage, progress) => {
+        applyDecayVisuals(stage, progress);
+    });
+    
+    // Start decay
+    decay.start();
+    
+    // Interaction monitoring
+    const resetDecay = () => decay.reset();
+    document.addEventListener('scroll', resetDecay);
+    document.addEventListener('mousemove', resetDecay);
+    document.addEventListener('click', resetDecay);
+    document.addEventListener('touchstart', resetDecay);
+    document.addEventListener('keydown', resetDecay);
+});
+</script>
+
+</body>
+</html>
