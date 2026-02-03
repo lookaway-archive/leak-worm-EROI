@@ -41,12 +41,12 @@ const eroiContent = {
 
   // IMAGE ASSETS - Captain will place actual files in /assets/
   images: {
-    product: "assets/T7-EROI-PROD-BOTTLE-v1001.png",
-    charHero: "assets/T7-EROI-CHAR-HERO-v1002.png",
-    charFront: "assets/T7-EROI-CHAR-FRONT-v1001.png",
-    charAngle: "assets/T7-EROI-CHAR-ANGLE-v001.png",
-    envHero: "assets/T7-EROI-ENV-HERO-v1001.png",
-    envAbove: "assets/T7-EROI-ENV-VAULT-ABOVE-v1001.png"
+    product: "assets/T7-EROI-PROD-BOTTLE-v1001.jpg",
+    charHero: "assets/T7-EROI-CHAR-HERO-v1002.jpg",
+    charFront: "assets/T7-EROI-CHAR-FRONT-v1001.jpg",
+    charAngle: "assets/T7-EROI-CHAR-ANGLE-v001.jpg",
+    envHero: "assets/T7-EROI-ENV-HERO-v1001.jpg",
+    envAbove: "assets/T7-EROI-ENV-VAULT-ABOVE-v1001.jpg"
   },
 
   // CONTENT SECTIONS
@@ -188,7 +188,7 @@ const eroiContent = {
       id: 8,
       type: "text",
       title: "ENVIRONMENT STUDY",
-      subtitle: "Not a well. Not even a tomb — a tomb has no exit. This is a prison with open doors.",
+      subtitle: "Not a well. Not even a tomb — a tomb has no exit. This is a prison with one open door.",
       content: `
         <p>Circular. Tiered rings rising into darkness like an inverted colosseum — architecture designed to hold something precious. Brutalist. Cold. A monument to storage.</p>
 
